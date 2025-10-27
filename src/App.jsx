@@ -34,11 +34,14 @@ function App() {
         createdAt: serverTimestamp(),
       };
 
-      await addDoc(collection(db, "notes"), newNote);
+      // Save to Firestore
+      const docRef = await addDoc(collection(db, "notes"), newNote);
 
-      setNote("");
-      setIsSaving(false);
-      fetchNotes();
+      // ✅ Optimistically add note to state so UI updates immediately
+      setSavedNotes((prev) => [{ id: docRef.id, ...newNote }, ...prev]);
+
+      setNote("");       // clear input
+      setIsSaving(false); // stop loading
     } catch (error) {
       console.error("❌ Error saving note:", error);
       alert("Failed to save note: " + error.message);
@@ -109,14 +112,29 @@ function App() {
           {/* 🔹 Notes List */}
           <div className="notes-list">
             <h3>Saved Notes</h3>
+
+            {/* 🔹 Refresh Notes Button */}
+            <button
+              onClick={fetchNotes}
+              style={{
+                marginBottom: "15px",
+                backgroundColor: "#28a745",
+                color: "white",
+                border: "none",
+                padding: "6px 12px",
+                borderRadius: "5px",
+                cursor: "pointer",
+              }}
+            >
+              Refresh Notes
+            </button>
+
             {savedNotes.length === 0 && <p>No notes yet.</p>}
             {savedNotes.map((n) => (
               <div key={n.id} className="note-card">
                 <p>
                   <strong>Note:</strong>{" "}
-                  {n.note?.length > 50
-                    ? n.note.substring(0, 50) + "..."
-                    : n.note}
+                  {n.note?.length > 50 ? n.note.substring(0, 50) + "..." : n.note}
                 </p>
                 <div className="card-buttons">
                   <button onClick={() => handleOpenNote(n)}>Open Note</button>
