@@ -95,17 +95,17 @@ button:hover {
   margin-top: 30px;
 }
 .note-code {
-  white-space: pre-wrap;
-  font-family: monospace;
-  background: #f4f4f4;
-  padding: 10px;
+  background-color: #f7f7f7;
+  padding: 12px;
   border-radius: 6px;
-  overflow-x: auto;
-  overflow-y: auto;
-  max-height: 50vh; /* ✅ Limit height of the note text area */
-  border: 1px solid #ddd;
+  border: 1px solid #ccc;
+  white-space: pre-wrap; /* preserve code formatting */
+  word-wrap: break-word; /* prevent horizontal overflow */
+  overflow-x: auto; /* allow horizontal scroll for long code lines */
+  max-height: 50vh; /* limit height */
+  font-family: "Courier New", monospace;
+  font-size: 14px;
   line-height: 1.4;
-  margin-top: 5px;
 }
 
 .note-card {
@@ -140,17 +140,14 @@ button:hover {
 }
 
 .modal-content {
-  background-color: #ffffff;
-  color: #222;
+  background: white;
   padding: 20px;
-  border-radius: 15px;
-  width: 90%;
+  border-radius: 10px;
   max-width: 600px;
-  max-height: 80vh; /* ✅ Prevent oversize */
-  overflow-y: auto; /* ✅ Scroll if content too long */
-  box-shadow: 0 8px 25px rgba(0, 0, 0, 0.4);
-  display: flex;
-  flex-direction: column;
+  width: 90%;
+  max-height: 80vh; /* keep it responsive */
+  overflow-y: auto; /* allows scrolling when content is long */
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.2);
 }
 
 .modal-content h3 {

@@ -8,48 +8,48 @@ import {
   collection,
   addDoc,
   getDocs,
-  serverTimestamp,
+  updateDoc,
   deleteDoc,
   doc,
+  serverTimestamp,
 } from "firebase/firestore";
 
 function App() {
+  const [title, setTitle] = useState("");
   const [note, setNote] = useState("");
   const [savedNotes, setSavedNotes] = useState([]);
   const [selectedNote, setSelectedNote] = useState(null);
   const [isSaving, setIsSaving] = useState(false);
+  const [isUpdating, setIsUpdating] = useState(false);
+  const [isEditMode, setIsEditMode] = useState(false); // 👈 NEW: track if editing or viewing
 
-  // 🔹 Save text note to Firestore
+  // 🔹 Save new note to Firestore
   const handleSave = async () => {
+    if (!title.trim()) return alert("Please enter a title!");
     if (!note.trim()) return alert("Please write a note!");
 
     try {
       setIsSaving(true);
 
       const newNote = {
-        fileName: "Text only",
-        fileURL: "",
-        storagePath: "",
+        title,
         note,
         createdAt: serverTimestamp(),
       };
 
-      // Save to Firestore
       const docRef = await addDoc(collection(db, "notes"), newNote);
-
-      // ✅ Optimistically add note to state so UI updates immediately
       setSavedNotes((prev) => [{ id: docRef.id, ...newNote }, ...prev]);
-
-      setNote("");       // clear input
-      setIsSaving(false); // stop loading
+      setTitle("");
+      setNote("");
     } catch (error) {
       console.error("❌ Error saving note:", error);
       alert("Failed to save note: " + error.message);
+    } finally {
       setIsSaving(false);
     }
   };
 
-  // 🔹 Get all notes from Firestore
+  // 🔹 Fetch all notes
   const fetchNotes = async () => {
     const querySnapshot = await getDocs(collection(db, "notes"));
     const notes = querySnapshot.docs.map((doc) => ({
@@ -64,8 +64,39 @@ function App() {
   }, []);
 
   // 🔹 Open note modal
-  const handleOpenNote = (note) => setSelectedNote(note);
-  const handleCloseModal = () => setSelectedNote(null);
+  const handleOpenNote = (note, edit = false) => {
+    setSelectedNote(note);
+    setIsEditMode(edit);
+  };
+
+  const handleCloseModal = () => {
+    setSelectedNote(null);
+    setIsEditMode(false);
+  };
+
+  // 🔹 Update note
+  const handleUpdateNote = async () => {
+    if (!selectedNote.title.trim() || !selectedNote.note.trim()) {
+      return alert("Please fill in both the title and note!");
+    }
+
+    try {
+      setIsUpdating(true);
+      const noteRef = doc(db, "notes", selectedNote.id);
+      await updateDoc(noteRef, {
+        title: selectedNote.title,
+        note: selectedNote.note,
+      });
+      alert("✅ Note updated successfully!");
+      fetchNotes();
+      handleCloseModal();
+    } catch (error) {
+      console.error("Error updating note:", error);
+      alert("Failed to update note.");
+    } finally {
+      setIsUpdating(false);
+    }
+  };
 
   // 🔹 Delete note
   const handleDeleteNote = async (noteId) => {
@@ -74,7 +105,7 @@ function App() {
     try {
       await deleteDoc(doc(db, "notes", noteId));
       fetchNotes();
-      alert("Note deleted successfully!");
+      alert("🗑️ Note deleted successfully!");
     } catch (error) {
       console.error("Error deleting note:", error);
       alert("Failed to delete note.");
@@ -90,14 +121,28 @@ function App() {
         </div>
         <div className="box">
           <h1>Welcome to My Notes App</h1>
-          <p>Write and save personal notes below 👇</p>
+          <p>Write, view, and edit your notes below 👇</p>
         </div>
       </nav>
 
       {/* 🔹 Note Input Section */}
       <div className="upload-container">
         <div className="spacer">
-          <h2>Write Your Note</h2>
+          <h2>Create a New Note</h2>
+
+          <input
+            type="text"
+            placeholder="Enter title..."
+            value={title}
+            onChange={(e) => setTitle(e.target.value)}
+            style={{
+              width: "100%",
+              padding: "10px",
+              marginBottom: "10px",
+              borderRadius: "5px",
+              border: "1px solid #ccc",
+            }}
+          />
 
           <textarea
             placeholder="Write your note here..."
@@ -113,7 +158,6 @@ function App() {
           <div className="notes-list">
             <h3>Saved Notes</h3>
 
-            {/* 🔹 Refresh Notes Button */}
             <button
               onClick={fetchNotes}
               style={{
@@ -130,14 +174,18 @@ function App() {
             </button>
 
             {savedNotes.length === 0 && <p>No notes yet.</p>}
+
             {savedNotes.map((n) => (
               <div key={n.id} className="note-card">
+                <h4>{n.title || "Untitled"}</h4>
                 <p>
-                  <strong>Note:</strong>{" "}
-                  {n.note?.length > 50 ? n.note.substring(0, 50) + "..." : n.note}
+                  {n.note?.length > 50
+                    ? n.note.substring(0, 50) + "..."
+                    : n.note}
                 </p>
                 <div className="card-buttons">
-                  <button onClick={() => handleOpenNote(n)}>Open Note</button>
+                  <button onClick={() => handleOpenNote(n, false)}>View</button>
+                  <button onClick={() => handleOpenNote(n, true)}>Edit</button>
                   <button
                     className="delete-btn"
                     onClick={() => handleDeleteNote(n.id)}
@@ -151,16 +199,70 @@ function App() {
         </div>
       </div>
 
-      {/* 🔹 Modal for note details */}
+      {/* 🔹 Modal for view or edit */}
       {selectedNote && (
         <div className="modal">
           <div className="modal-content">
-            <h3>📘 Note Details</h3>
-            <p>
-              <strong>Note:</strong>
-            </p>
-            <div className="note-code">{selectedNote.note}</div>
-            <button onClick={handleCloseModal}>Close</button>
+            {isEditMode ? (
+              <>
+                <h3>✏️ Edit Note</h3>
+                <input
+                  type="text"
+                  value={selectedNote.title}
+                  onChange={(e) =>
+                    setSelectedNote({ ...selectedNote, title: e.target.value })
+                  }
+                  style={{
+                    width: "100%",
+                    padding: "8px",
+                    marginBottom: "10px",
+                    borderRadius: "5px",
+                    border: "1px solid #ccc",
+                  }}
+                />
+                <textarea
+                  value={selectedNote.note}
+                  onChange={(e) =>
+                    setSelectedNote({ ...selectedNote, note: e.target.value })
+                  }
+                  style={{
+                    width: "100%",
+                    height: "150px",
+                    padding: "10px",
+                    borderRadius: "5px",
+                    border: "1px solid #ccc",
+                    marginBottom: "10px",
+                  }}
+                ></textarea>
+
+                <div style={{ display: "flex", gap: "10px" }}>
+                  <button onClick={handleUpdateNote} disabled={isUpdating}>
+                    {isUpdating ? "Updating..." : "Save Changes"}
+                  </button>
+                  <button onClick={handleCloseModal}>Cancel</button>
+                </div>
+              </>
+            ) : (
+              <>
+                <h3>📘 View Note</h3>
+                <h4>{selectedNote.title}</h4>
+                <div
+                  style={{
+                    backgroundColor: "#f9f9f9",
+                    padding: "10px",
+                    borderRadius: "5px",
+                    minHeight: "100px",
+                    border: "1px solid #ddd",
+                    whiteSpace: "pre-wrap",
+                  }}
+                >
+                  {selectedNote.note}
+                </div>
+                <button onClick={handleCloseModal} style={{ marginTop: "10px" }}>
+                  Close
+                </button>
+              </>
+            )}
           </div>
         </div>
       )}
