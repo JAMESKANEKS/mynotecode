@@ -176,25 +176,47 @@ function App() {
             {savedNotes.length === 0 && <p>No notes yet.</p>}
 
             {savedNotes.map((n) => (
-              <div key={n.id} className="note-card">
-                <h4>{n.title || "Untitled"}</h4>
-                <p>
-                  {n.note?.length > 50
-                    ? n.note.substring(0, 50) + "..."
-                    : n.note}
-                </p>
-                <div className="card-buttons">
-                  <button onClick={() => handleOpenNote(n, false)}>View</button>
-                  <button onClick={() => handleOpenNote(n, true)}>Edit</button>
-                  <button
-                    className="delete-btn"
-                    onClick={() => handleDeleteNote(n.id)}
-                  >
-                    Delete
-                  </button>
-                </div>
-              </div>
-            ))}
+  <div key={n.id} className="note-card">
+    <h4>{n.title || "Untitled"}</h4>
+    <p>
+      {n.note?.length > 50
+        ? n.note.substring(0, 50) + "..."
+        : n.note}
+    </p>
+    <div className="card-buttons">
+      <button onClick={() => handleOpenNote(n, false)}>View</button>
+      <button onClick={() => handleOpenNote(n, true)}>Edit</button>
+      <button
+        className="delete-btn"
+        onClick={() => handleDeleteNote(n.id)}
+      >
+        Delete
+      </button>
+
+      {/* ✅ Copy Button */}
+      <button
+        onClick={() => {
+          const textToCopy = `📋 ${n.title}\n\n${n.note}`;
+          navigator.clipboard
+            .writeText(textToCopy)
+            .then(() => alert("✅ Note copied to clipboard!"))
+            .catch(() => alert("❌ Failed to copy note."));
+        }}
+        style={{
+          backgroundColor: "#007bff",
+          color: "white",
+          border: "none",
+          padding: "6px 10px",
+          borderRadius: "5px",
+          cursor: "pointer",
+        }}
+      >
+        Copy
+      </button>
+    </div>
+  </div>
+))}
+
           </div>
         </div>
       </div>
@@ -271,3 +293,5 @@ function App() {
 }
 
 export default App;
+
+

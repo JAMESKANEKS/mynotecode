@@ -188,5 +188,13 @@ button:hover {
   padding: 10px;
   border-radius: 5px;
 }
+.card-buttons button {
+  margin-right: 5px;
+  transition: background-color 0.2s ease;
+}
+
+.card-buttons button:hover {
+  opacity: 0.9;
+}
 
 
